@@ -35,6 +35,7 @@ Back::Back(
   config().blackboard->get("node",node_);
 
   // Complete here: Initialize vel_pub_ to  /output_vel
+  vel_pub_ = node_->create_publisher<geometry_msgs::msg::Twist>("output_vel", 100);
 }
 
 void
@@ -49,12 +50,17 @@ Back::tick()
   {
     start_time_=node_->now();
   }
+  auto elapsed = node_->now() - start_time_;
 
-  geometry_msgs::msg::Twist vel_msgs;
   // Complete here: Fill and publish velocities
+  geometry_msgs::msg::Twist vel {};
+  vel.linear.x = -0.5;
+  vel_pub_->publish(vel);
 
   // Complete here: Return SUCCESS after moving back three seconds.
-
+  if (elapsed >= 1s) {
+    return BT::NodeStatus::SUCCESS;
+  }
   return BT::NodeStatus::RUNNING;
 }
 

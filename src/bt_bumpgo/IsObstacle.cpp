@@ -36,12 +36,15 @@ IsObstacle::IsObstacle(
   config().blackboard->get("node", node_);
 
   // Complete here: Initialize laser_sub_ subscribing to /input_scan
+  laser_sub_ = node_->create_subscription<sensor_msgs::msg::LaserScan>(
+    "input_scan", rclcpp::SensorDataQoS(), std::bind(&IsObstacle::laser_callback, this, _1));
 }
 
 void
 IsObstacle::laser_callback(sensor_msgs::msg::LaserScan::UniquePtr msg)
 {
   // Complete here: Store last_scan_
+  last_scan_ = std::move(msg);
 }
 
 BT::NodeStatus
@@ -52,10 +55,22 @@ IsObstacle::tick()
     return BT::NodeStatus::FAILURE;
   }
 
-  double distance =1.0;
-  getInput("distance",distance);
+  double distance_thresh = 1.0;
+  getInput("distance", distance_thresh);
 
-  // Complete here: Return SUCCESS if there is an obstacle
+  // Get the index of nearest obstacle
+  auto start_range_idx = (last_scan_->ranges.size() / 2) - 0.05 * last_scan_->ranges.size();
+  auto end_range_idx = (last_scan_->ranges.size() / 2) + 0.05 * last_scan_->ranges.size();
+  int min_idx = std::min_element(
+    last_scan_->ranges.begin() + start_range_idx,
+    last_scan_->ranges.begin() + end_range_idx) - last_scan_->ranges.begin();
+
+  // Get the distance to nearest obstacle
+  float distance_min = last_scan_->ranges[min_idx];
+
+  if (distance_min < distance_thresh) {
+    return BT::NodeStatus::SUCCESS;
+  }
 
   return BT::NodeStatus::FAILURE;
 }
